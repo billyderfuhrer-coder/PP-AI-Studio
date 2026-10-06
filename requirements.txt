@@ -1,0 +1,5 @@
+Flask
+python-dotenv
+huggingface_hub
+Pillow
+gunicorn
