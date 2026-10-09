@@ -13,6 +13,16 @@ HF_TOKEN = (
     os.environ.get("PP_SECRET_API_KEY")
     or os.environ.get("PP_SECRET_API_KEY_1")
 )
+
+print(
+    "Token source:",
+    "PP_SECRET_API_KEY"
+    if os.environ.get("PP_SECRET_API_KEY")
+    else "PP_SECRET_API_KEY_1"
+    if os.environ.get("PP_SECRET_API_KEY_1")
+    else "NONE"
+)
+
 MODEL = "black-forest-labs/FLUX.2-klein-9B"
 
 REFERENCE_FOLDER = Path("references")
