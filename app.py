@@ -9,10 +9,8 @@ from io import BytesIO
 
 load_dotenv()
 
-HF_TOKEN = (
-    os.environ.get("PP_SECRET_API_KEY")
-    or os.environ.get("PP_SECRET_API_KEY_1")
-)
+HF_TOKEN = os.environ.get("PP_SECRET_API_KEY_1")
+
 
 print(
     "Token source:",
