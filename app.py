@@ -9,8 +9,10 @@ from io import BytesIO
 
 load_dotenv()
 
-HF_TOKEN = os.environ.get("PP_SECRET_API_KEY")
-
+HF_TOKEN = (
+    os.environ.get("PP_SECRET_API_KEY")
+    or os.environ.get("PP_SECRET_API_KEY_1")
+)
 MODEL = "black-forest-labs/FLUX.2-klein-9B"
 
 REFERENCE_FOLDER = Path("references")
