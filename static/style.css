@@ -572,3 +572,28 @@ footer {
     }
 }
 
+
+.download-container {
+    text-align: center;
+    margin-top: 16px;
+}
+
+#downloadBtn {
+    display: inline-block;
+    padding: 12px 22px;
+    background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+    color: white;
+    text-decoration: none;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: transform 0.2s, opacity 0.2s;
+}
+
+#downloadBtn:hover {
+    transform: translateY(-2px);
+    opacity: 0.9;
+}
+
+#downloadBtn[hidden] {
+    display: none;
+}
