@@ -1,6 +1,8 @@
+
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 from huggingface_hub import InferenceClient
+from PIL import Image, ImageDraw, ImageFont
 import os
 import re
 import base64
@@ -9,22 +11,17 @@ from io import BytesIO
 
 load_dotenv()
 
-HF_TOKEN = os.environ.get("PP_SECRET_API_KEY_1")
-
-
-print(
-    "Token source:",
-    "PP_SECRET_API_KEY"
-    if os.environ.get("PP_SECRET_API_KEY")
-    else "PP_SECRET_API_KEY_1"
-    if os.environ.get("PP_SECRET_API_KEY_1")
-    else "NONE"
+HF_TOKEN = (
+    os.environ.get("PP_SECRET_API_KEY_1")
+    or os.environ.get("PP_SECRET_API_KEY")
 )
 
 MODEL = "black-forest-labs/FLUX.2-klein-9B"
 
 REFERENCE_FOLDER = Path("references")
 REFERENCE_IMAGE = REFERENCE_FOLDER / "pp1.jpg"
+
+WATERMARK_TEXT = "PP-AI-Studio"
 
 app = Flask(__name__)
 
@@ -36,25 +33,13 @@ if HF_TOKEN:
 else:
     client = None
 
-
 print("--------------------------------")
 print("PP AI STUDIO")
 print("--------------------------------")
-
-if HF_TOKEN:
-    print("Hugging Face API token: LOADED")
-else:
-    print("Hugging Face API token: NOT FOUND")
-
+print("Hugging Face API token:", "LOADED" if HF_TOKEN else "NOT FOUND")
 print("Model:", MODEL)
 print("Provider: fal-ai")
-
-if REFERENCE_IMAGE.exists():
-    print("PP reference image: FOUND")
-    print("Reference:", REFERENCE_IMAGE)
-else:
-    print("PP reference image: NOT FOUND")
-
+print("PP reference image:", "FOUND" if REFERENCE_IMAGE.exists() else "NOT FOUND")
 print("--------------------------------")
 
 
@@ -66,89 +51,90 @@ def home():
 
 def build_pp_prompt(user_prompt):
     return f"""
-Edit the provided reference image according to the user's request.
+Edit the provided PP reference image according to the user's request.
 
 IDENTITY PRESERVATION:
-The reference image defines PP's original identity and recognizable design.
-Preserve PP's distinctive face shape, facial features, signature appearance,
-and defining visual characteristics. PP should remain recognizable in every
-generated image.
+The reference image defines PP's original identity.
+Preserve PP's distinctive rounded white face, recognizable facial
+features, black sunglasses, smile, and signature appearance.
+PP must remain recognizable in the finished image.
 
-INTERPRET THE USER'S INTENT:
-Carefully determine what the user actually wants changed.
-Distinguish between a limited edit, a costume or accessory change, a scene
-change, and a complete character transformation.
-
-Make changes appropriate to the user's specific request. Do not assume every
-request is a full transformation, and do not treat every request as a simple
-outfit change.
+INTERPRET THE REQUEST:
+Understand exactly what the user wants.
 
 For limited edits, preserve PP's original pose, body shape, proportions,
-and silhouette as much as possible. Change only what the user requested.
+and silhouette as much as possible.
 
-For full transformations, adapt PP's pose, body structure, silhouette,
-clothing, accessories, and other relevant visual features as needed to make
-the requested transformation clear. Preserve PP's identity and recognizable
-features wherever possible.
+For costume changes, dress PP in the requested clothing while preserving
+PP's recognizable original shape and identity.
 
-TRANSFORMATION ACCURACY:
-When the user requests a particular role, character type, activity, or form,
-make the overall appearance clearly communicate that specific request.
-Do not rely on clothing or accessories alone if the requested transformation
-requires changes to the pose, silhouette, change position, body arrangement, or other features.
+For full transformations, adjust PP's pose, body arrangement, silhouette,
+clothing, and relevant features as needed to make the requested
+transformation unmistakable. Do not merely add a costume if the requested
+transformation requires a different body arrangement.
 
-Do not substitute a different concept for the one requested. Do not introduce
-unrequested transformations, effects, objects, or design elements.
-Every visual change should support the user's actual intention.
+Do not replace the requested concept with a different one.
 
-SETTING AND THEME:
-make it default base on the reference if no description is added here
-if user input a description about setting and theme
-Follow the setting, atmosphere, theme, environment, objects, and visual style
-specified by the user. Include the requested details while keeping PP as the
-main subject. Do not add unrelated themes or let background elements obscure
-PP's identity or the requested action.
+SETTING AND COMPOSITION:
+If the user does not specify a new setting, retain the reference image's
+general setting and style where appropriate.
 
+If the user specifies a setting, follow it accurately.
+Include requested objects, activities, atmosphere, and background details.
+Keep PP and the main requested action clearly visible.
 
-REQUESTED TEXT:
-If the user asks for specific text or dialogue in the image, include the
-requested wording as accurately as possible. Make it clearly visible,
-correctly spelled, and readable. Use an appropriate placement and format
-within the composition. Do not invent dialogue when none was requested.
+EXACT TEXT REQUIREMENTS:
+If the user requests specific wording on a sign, banner, poster, screen,
+or other object, reproduce the wording exactly as provided.
+
+Preserve every word, its spelling, punctuation, and order.
+Do not paraphrase, translate, shorten, or replace the requested text.
+Do not add unrelated words, random letters, fake logos, or extra text.
+
+When a sign is requested:
+- Show one clearly visible sign unless the user requests more.
+- Face the sign toward the viewer whenever appropriate.
+- Use large, simple, high-contrast lettering.
+- Keep the entire requested message inside the sign.
+- Do not put parts of the message outside the sign.
+- Do not invent additional dialogue or signage.
+
+The user's exact quoted wording is the intended text, not a suggestion.
 
 USER'S ORIGINAL REQUEST:
 {user_prompt}
 
 COMPOSITION AND QUALITY:
-Create a coherent, polished image that follows the user's request.
-Keep PP recognizable, make the requested changes visually clear, and maintain
-a balanced composition. Avoid unnecessary redesigns, contradictory details,
-unrequested text, and visual elements that conflict with the user's intent.
+Create a polished, coherent image that follows the user's actual request.
+Preserve PP's identity while making the requested transformation clear.
+Avoid contradictory details, unrelated objects, unnecessary text,
+and changes that conflict with the request.
 
-Watermark:
-add a small visible but not huge watermark on the left down side called "PP-AI-Studio"
-with a proper roman font text design, text color basing on the requested user prompt description
+WATERMARK:
+Leave a small, unobstructed area in the bottom-left corner for a watermark
+that will be added after image generation.
+
+Do not attempt to draw or spell the watermark yourself.
+Do not put watermark lettering on the user's requested sign.
 
 FINAL PRIORITY:
-Follow the user's actual request rather than a fixed transformation template.
-Preserve PP's identity, make only appropriate changes, and ensure the final
-image communicates the intended result as clearly as possible.
+Follow the user's actual request, preserve PP's identity, and make the
+requested scene and actions easy to understand.
 """
+
+
 def load_pp_reference():
     if not REFERENCE_IMAGE.exists():
         raise RuntimeError(
             "PP reference image not found. "
-            "Please put pp1.jpg inside the references folder."
+            "Put pp1.jpg inside the references folder."
         )
 
     try:
         image_bytes = REFERENCE_IMAGE.read_bytes()
 
-        print("--------------------------------")
-        print("PP REFERENCE LOADED")
-        print("File:", REFERENCE_IMAGE)
-        print("Size:", len(image_bytes), "bytes")
-        print("--------------------------------")
+        print("PP reference loaded:", REFERENCE_IMAGE)
+        print("Reference size:", len(image_bytes), "bytes")
 
         return image_bytes
 
@@ -158,8 +144,122 @@ def load_pp_reference():
         )
 
 
-def generate_image(prompt):
+def load_watermark_font(size):
+    """Load a readable system font, with a built-in fallback."""
 
+    font_paths = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
+        "C:/Windows/Fonts/arial.ttf",
+        "C:/Windows/Fonts/segoeui.ttf",
+    ]
+
+    for font_path in font_paths:
+        try:
+            if Path(font_path).exists():
+                return ImageFont.truetype(font_path, size)
+        except OSError:
+            continue
+
+    return ImageFont.load_default()
+
+
+def add_watermark(image):
+    """
+    Add a real, readable PP-AI-Studio watermark
+    to the bottom-left corner of the final image.
+    """
+
+    if image.mode != "RGBA":
+        image = image.convert("RGBA")
+
+    width, height = image.size
+
+    # Scale the watermark to the output image size.
+    font_size = max(12, min(30, width // 38))
+    font = load_watermark_font(font_size)
+
+    padding = max(6, width // 120)
+    margin_x = max(12, width // 40)
+    margin_y = max(12, height // 40)
+
+    # Measure the actual text dimensions.
+    temporary_draw = ImageDraw.Draw(image)
+    left, top, right, bottom = temporary_draw.textbbox(
+        (0, 0),
+        WATERMARK_TEXT,
+        font=font,
+        stroke_width=1
+    )
+
+    text_width = right - left
+    text_height = bottom - top
+
+    box_width = text_width + padding * 2
+    box_height = text_height + padding * 2
+
+    x = margin_x
+    y = height - margin_y - box_height
+
+    # Keep the watermark inside even unusually small images.
+    x = max(0, min(x, width - box_width))
+    y = max(0, min(y, height - box_height))
+
+    # Draw on a separate transparent layer.
+    overlay = Image.new("RGBA", image.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+
+    # Subtle dark backing keeps the watermark readable on
+    # both light and dark backgrounds.
+    draw.rounded_rectangle(
+        (
+            x,
+            y,
+            x + box_width,
+            y + box_height
+        ),
+        radius=max(4, padding),
+        fill=(12, 8, 24, 185)
+    )
+
+    text_x = x + padding - left
+    text_y = y + padding - top
+
+    # White lettering with a dark outline for contrast.
+    draw.text(
+        (text_x, text_y),
+        WATERMARK_TEXT,
+        font=font,
+        fill=(255, 255, 255, 245),
+        stroke_width=1,
+        stroke_fill=(0, 0, 0, 230)
+    )
+
+    image = Image.alpha_composite(image, overlay)
+
+    print(
+        f"Watermark added: {WATERMARK_TEXT} "
+        f"at bottom-left ({x}, {y})"
+    )
+
+    return image
+
+
+def image_to_data_url(image):
+    """Convert a Pillow image to a PNG data URL."""
+
+    image_buffer = BytesIO()
+
+    image.save(image_buffer, format="PNG")
+
+    encoded_image = base64.b64encode(
+        image_buffer.getvalue()
+    ).decode("utf-8")
+
+    return "data:image/png;base64," + encoded_image
+
+
+def generate_image(prompt):
     print("--------------------------------")
     print("Starting PP image generation...")
     print("Model:", MODEL)
@@ -169,7 +269,7 @@ def generate_image(prompt):
 
     if not HF_TOKEN:
         raise RuntimeError(
-            "HF_TOKEN was not found in .env"
+            "Hugging Face API token was not found."
         )
 
     if client is None:
@@ -178,11 +278,9 @@ def generate_image(prompt):
         )
 
     reference_image = load_pp_reference()
-
     final_prompt = build_pp_prompt(prompt)
 
     try:
-
         print("Sending PP reference + prompt to Hugging Face...")
         print("Using image-to-image generation...")
 
@@ -192,68 +290,45 @@ def generate_image(prompt):
             model=MODEL
         )
 
-        print("--------------------------------")
-        print("HUGGING FACE RESPONDED SUCCESSFULLY")
-        print("--------------------------------")
+        print("Hugging Face generation succeeded.")
 
     except Exception as error:
-
-        print("--------------------------------")
-        print("HUGGING FACE ERROR")
-        print(error)
-        print("--------------------------------")
+        print("HUGGING FACE ERROR:", error)
 
         raise RuntimeError(
             f"Hugging Face generation failed: {error}"
         )
 
     try:
+        # Add the watermark after the AI finishes generating.
+        # This does not depend on the model drawing text correctly.
+        image = add_watermark(image)
 
-        image_buffer = BytesIO()
+        # Convert the watermarked image to the response format.
+        image_url = image_to_data_url(image)
 
-        image.save(
-            image_buffer,
-            format="PNG"
-        )
+        print("PP image processed successfully.")
 
-        image_bytes = image_buffer.getvalue()
-
-        encoded_image = base64.b64encode(
-            image_bytes
-        ).decode("utf-8")
+        return image_url
 
     except Exception as error:
-
-        print("--------------------------------")
-        print("IMAGE CONVERSION ERROR")
-        print(error)
-        print("--------------------------------")
+        print("IMAGE PROCESSING ERROR:", error)
 
         raise RuntimeError(
             f"Could not process generated image: {error}"
         )
 
-    print("--------------------------------")
-    print("PP IMAGE GENERATED SUCCESSFULLY")
-    print("--------------------------------")
-
-    return "data:image/png;base64," + encoded_image
-
 
 @app.route("/generate", methods=["POST"])
 def generate():
-
     print("================================")
     print("GENERATE REQUEST RECEIVED")
     print("================================")
 
     try:
-
         data = request.get_json(silent=True) or {}
 
-        prompt = str(
-            data.get("prompt", "")
-        ).strip()
+        prompt = str(data.get("prompt", "")).strip()
 
         print("Received prompt:", prompt)
 
@@ -267,11 +342,7 @@ def generate():
                 "error": "Prompt is too long."
             }), 400
 
-        if not re.search(
-            r"\bpp\b",
-            prompt,
-            re.IGNORECASE
-        ):
+        if not re.search(r"\bpp\b", prompt, re.IGNORECASE):
             return jsonify({
                 "error": "Please include PP in your prompt."
             }), 400
@@ -283,19 +354,19 @@ def generate():
         })
 
     except Exception as error:
-
-        print("--------------------------------")
-        print("GENERATION ERROR")
-        print(error)
-        print("--------------------------------")
+        print("GENERATION ERROR:", error)
 
         return jsonify({
-            "error": "PP AI Studio is currently in Limited Beta. Image generation is temporarily unavailable while we manage our limited generation capacity. Please try again later."
+            "error": (
+                "PP AI Studio is currently in Limited Beta. "
+                "Image generation is temporarily unavailable "
+                "while we manage our limited generation capacity. "
+                "Please try again later."
+            )
         }), 500
 
 
 if __name__ == "__main__":
-
     print("Starting Flask server...")
 
     app.run(
