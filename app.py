@@ -66,56 +66,74 @@ def home():
 
 def build_pp_prompt(user_prompt):
     return f"""
-Create an image edit using the provided PP reference image.
-The reference is the source of truth for PP's identity and signature design.
+Edit the provided reference image according to the user's request.
 
-CORE RULE — CHANGE ONLY WHAT THE USER ASKS FOR:
-First determine whether the request is a limited edit or a full transformation.
+IDENTITY PRESERVATION:
+The reference image defines PP's original identity and recognizable design.
+Preserve PP's distinctive face shape, facial features, signature appearance,
+and defining visual characteristics. PP should remain recognizable in every
+generated image.
 
-FOR NORMAL / LIMITED EDITS (the default):
-If the user asks PP to wear, hold, use, stand beside, or appear in something,
-keep PP's original signature posture, pose, body shape, body proportions,
-silhouette, head shape, face, hairstyle, and recognizable appearance.
-Change only the specifically requested item or scene detail. For example,
-"make PP wear Egyptian clothing" means keep the original PP character and pose,
-and change the outfit to Egyptian-inspired clothing. Do not redesign PP's body,
-turn PP into a different character, or add unrequested effects.
+INTERPRET THE USER'S INTENT:
+Carefully determine what the user actually wants changed.
+Distinguish between a limited edit, a costume or accessory change, a scene
+change, and a complete character transformation.
 
-FOR EXPLICIT FULL TRANSFORMATIONS:
-If the user asks to turn, transform, or make PP into a different role or
-fantasy character (for example, a genie, astronaut, robot, or superhero),
-adapt PP's pose, clothing, body arrangement, and scene as needed to clearly
-show that transformation. However, PP must remain recognizably the same PP:
-preserve the reference's distinctive face shape, facial features, head identity,
-and characteristic visual design wherever possible. The transformation changes
-the role and appropriate features, not PP's identity.
+Make changes appropriate to the user's specific request. Do not assume every
+request is a full transformation, and do not treat every request as a simple
+outfit change.
 
-Avoid confusing visual shortcuts. A genie must look clearly like a genie,
-with recognizable genie styling such as a magical turban or headpiece, ornate
-costume, and intentional magical smoke or a floating/tapered lower body when
-appropriate. Do not make a genie look like a generic ghost. Do not replace
-the character's face with a vague face, mask, skull, or unrelated face.
+For limited edits, preserve PP's original pose, body shape, proportions,
+and silhouette as much as possible. Change only what the user requested.
 
-TEXT AND DIALOGUE:
-If the user requests specific words to appear or be spoken in the image, treat
-them as requested visible text. Reproduce the quoted wording accurately when
-possible, with clear, legible lettering and correct spelling. Do not omit the
-dialogue or replace it with unrelated text. Place it naturally, such as in a
-speech bubble, caption, or magical dialogue effect. Keep text out only if
-the user did not request it.
+For full transformations, adapt PP's pose, body structure, silhouette,
+clothing, accessories, and other relevant visual features as needed to make
+the requested transformation clear. Preserve PP's identity and recognizable
+features wherever possible.
 
-USER'S ORIGINAL REQUEST (follow this request; do not rewrite or expose it):
+TRANSFORMATION ACCURACY:
+When the user requests a particular role, character type, activity, or form,
+make the overall appearance clearly communicate that specific request.
+Do not rely on clothing or accessories alone if the requested transformation
+requires changes to the pose, silhouette, change position, body arrangement, or other features.
+
+Do not substitute a different concept for the one requested. Do not introduce
+unrequested transformations, effects, objects, or design elements.
+Every visual change should support the user's actual intention.
+
+SETTING AND THEME:
+make it default base on the reference if no description is added here
+if user input a description about setting and theme
+Follow the setting, atmosphere, theme, environment, objects, and visual style
+specified by the user. Include the requested details while keeping PP as the
+main subject. Do not add unrelated themes or let background elements obscure
+PP's identity or the requested action.
+
+
+REQUESTED TEXT:
+If the user asks for specific text or dialogue in the image, include the
+requested wording as accurately as possible. Make it clearly visible,
+correctly spelled, and readable. Use an appropriate placement and format
+within the composition. Do not invent dialogue when none was requested.
+
+USER'S ORIGINAL REQUEST:
 {user_prompt}
 
-Follow the requested subject, action, setting, clothing, props, mood, lighting,
-camera angle, composition, and art style. Do not add unrelated changes.
-When the request is ambiguous, prefer preserving PP's original signature pose,
-body shape, proportions, and design, changing only the clearly requested details.
+COMPOSITION AND QUALITY:
+Create a coherent, polished image that follows the user's request.
+Keep PP recognizable, make the requested changes visually clear, and maintain
+a balanced composition. Avoid unnecessary redesigns, contradictory details,
+unrequested text, and visual elements that conflict with the user's intent.
 
-Create a polished, coherent image in which PP is recognizable and the requested
-change is immediately understandable.
+Watermark:
+add a small visible but not huge watermark on the left down side called "PP-AI-Studio"
+with a proper roman font text design, text color basing on the requested user prompt description
+
+FINAL PRIORITY:
+Follow the user's actual request rather than a fixed transformation template.
+Preserve PP's identity, make only appropriate changes, and ensure the final
+image communicates the intended result as clearly as possible.
 """
-
 def load_pp_reference():
     if not REFERENCE_IMAGE.exists():
         raise RuntimeError(
