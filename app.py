@@ -66,42 +66,55 @@ def home():
 
 def build_pp_prompt(user_prompt):
     return f"""
-Create a new image featuring the same PP person shown in the
-provided reference image.
+Create an image edit using the provided PP reference image.
+The reference is the source of truth for PP's identity and signature design.
 
-The reference image is the primary visual identity reference.
+CORE RULE — CHANGE ONLY WHAT THE USER ASKS FOR:
+First determine whether the request is a limited edit or a full transformation.
 
-Preserve PP's recognizable:
-- face and facial appearance
-- head and body proportions
-- hairstyle
-- distinctive body shape
-- signature suit and clothing style
-- overall recognizable appearance
+FOR NORMAL / LIMITED EDITS (the default):
+If the user asks PP to wear, hold, use, stand beside, or appear in something,
+keep PP's original signature posture, pose, body shape, body proportions,
+silhouette, head shape, face, hairstyle, and recognizable appearance.
+Change only the specifically requested item or scene detail. For example,
+"make PP wear Egyptian clothing" means keep the original PP character and pose,
+and change the outfit to Egyptian-inspired clothing. Do not redesign PP's body,
+turn PP into a different character, or add unrequested effects.
 
-Do NOT replace PP with a generic businessman.
-Do NOT invent a completely different person.
-Do NOT change PP into another character.
+FOR EXPLICIT FULL TRANSFORMATIONS:
+If the user asks to turn, transform, or make PP into a different role or
+fantasy character (for example, a genie, astronaut, robot, or superhero),
+adapt PP's pose, clothing, body arrangement, and scene as needed to clearly
+show that transformation. However, PP must remain recognizably the same PP:
+preserve the reference's distinctive face shape, facial features, head identity,
+and characteristic visual design wherever possible. The transformation changes
+the role and appropriate features, not PP's identity.
 
-The user's requested scene is:
+Avoid confusing visual shortcuts. A genie must look clearly like a genie,
+with recognizable genie styling such as a magical turban or headpiece, ornate
+costume, and intentional magical smoke or a floating/tapered lower body when
+appropriate. Do not make a genie look like a generic ghost. Do not replace
+the character's face with a vague face, mask, skull, or unrelated face.
 
+TEXT AND DIALOGUE:
+If the user requests specific words to appear or be spoken in the image, treat
+them as requested visible text. Reproduce the quoted wording accurately when
+possible, with clear, legible lettering and correct spelling. Do not omit the
+dialogue or replace it with unrelated text. Place it naturally, such as in a
+speech bubble, caption, or magical dialogue effect. Keep text out only if
+the user did not request it.
+
+USER'S ORIGINAL REQUEST (follow this request; do not rewrite or expose it):
 {user_prompt}
 
-The generated image should show PP naturally placed into
-the requested scene while keeping PP visually recognizable.
+Follow the requested subject, action, setting, clothing, props, mood, lighting,
+camera angle, composition, and art style. Do not add unrelated changes.
+When the request is ambiguous, prefer preserving PP's original signature pose,
+body shape, proportions, and design, changing only the clearly requested details.
 
-Follow the requested:
-- environment
-- pose
-- clothing changes, if requested
-- lighting
-- camera angle
-- composition
-- artistic style
-
-Make the final image detailed, polished and visually appealing.
+Create a polished, coherent image in which PP is recognizable and the requested
+change is immediately understandable.
 """
-
 
 def load_pp_reference():
     if not REFERENCE_IMAGE.exists():
