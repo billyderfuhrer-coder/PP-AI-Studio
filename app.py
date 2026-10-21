@@ -2,6 +2,7 @@
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 from huggingface_hub import InferenceClient
+from PIL import Image, ImageStat
 from PIL import Image, ImageDraw, ImageFont
 import os
 import re
@@ -49,78 +50,73 @@ def home():
     return render_template("index.html")
 
 
+
 def build_pp_prompt(user_prompt):
     return f"""
-Edit the provided PP reference image according to the user's request.
+Create a polished, detailed image edit using the supplied PP
+reference image as the identity reference.
 
-IDENTITY PRESERVATION:
-The reference image defines PP's original identity.
-Preserve PP's distinctive rounded white face, recognizable facial
-features, black sunglasses, smile, and signature appearance.
-PP must remain recognizable in the finished image.
+IDENTITY — HIGHEST PRIORITY:
+PP must remain unmistakably recognizable.
+Preserve PP's original rounded white face, black sunglasses,
+recognizable smile, and distinctive head shape.
+Keep PP's signature appearance unless the user explicitly
+requests a clothing or character transformation.
+Do not replace PP with a generic person or a different character.
 
-INTERPRET THE REQUEST:
-Understand exactly what the user wants.
-
-For limited edits, preserve PP's original pose, body shape, proportions,
-and silhouette as much as possible.
-
-For costume changes, dress PP in the requested clothing while preserving
-PP's recognizable original shape and identity.
-
-For full transformations, adjust PP's pose, body arrangement, silhouette,
-clothing, and relevant features as needed to make the requested
-transformation unmistakable. Do not merely add a costume if the requested
-transformation requires a different body arrangement.
-
-Do not replace the requested concept with a different one.
-
-SETTING AND COMPOSITION:
-If the user does not specify a new setting, retain the reference image's
-general setting and style where appropriate.
-
-If the user specifies a setting, follow it accurately.
-Include requested objects, activities, atmosphere, and background details.
-Keep PP and the main requested action clearly visible.
-
-EXACT TEXT REQUIREMENTS:
-If the user requests specific wording on a sign, banner, poster, screen,
-or other object, reproduce the wording exactly as provided.
-
-Preserve every word, its spelling, punctuation, and order.
-Do not paraphrase, translate, shorten, or replace the requested text.
-Do not add unrelated words, random letters, fake logos, or extra text.
-
-When a sign is requested:
-- Show one clearly visible sign unless the user requests more.
-- Face the sign toward the viewer whenever appropriate.
-- Use large, simple, high-contrast lettering.
-- Keep the entire requested message inside the sign.
-- Do not put parts of the message outside the sign.
-- Do not invent additional dialogue or signage.
-
-The user's exact quoted wording is the intended text, not a suggestion.
-
-USER'S ORIGINAL REQUEST:
+FOLLOW THE USER'S REQUEST:
+The user's complete request is:
 {user_prompt}
 
-COMPOSITION AND QUALITY:
-Create a polished, coherent image that follows the user's actual request.
-Preserve PP's identity while making the requested transformation clear.
-Avoid contradictory details, unrelated objects, unnecessary text,
-and changes that conflict with the request.
+Interpret the request as a complete visual scene, not merely
+as a costume description.
 
-WATERMARK:
-Leave a small, unobstructed area in the bottom-left corner for a watermark
-that will be added after image generation.
+ACTION AND POSE:
+Identify the main action requested by the user.
+Actually show PP performing that action.
+If PP is riding, flying, driving, sitting, holding something,
+or interacting with an object, make that interaction clear.
+Adjust PP's body position, limbs, orientation, and posture
+as necessary for the requested action.
+Do not preserve the reference pose when it conflicts with
+the requested action.
 
-Do not attempt to draw or spell the watermark yourself.
-Do not put watermark lettering on the user's requested sign.
+OBJECTS AND ENVIRONMENT:
+Include the requested main objects and background elements.
+Place objects in the correct spatial relationships.
+If the user requests a vehicle, show PP interacting with it
+in a physically believable way.
+If the user requests a specific planet or location, make that
+environment visually recognizable.
+Include requested secondary details instead of ignoring them.
+Do not substitute unrelated objects for requested objects.
 
-FINAL PRIORITY:
-Follow the user's actual request, preserve PP's identity, and make the
-requested scene and actions easy to understand.
+CLOTHING AND TRANSFORMATIONS:
+When the user requests a costume or themed outfit, apply it
+to PP while preserving PP's recognizable face and head.
+When a full character transformation is requested, change
+the pose, body styling, and outfit as needed to communicate
+the transformation clearly.
+Do not interpret a requested transformation as only a hat
+or costume placed on an otherwise unrelated character.
+
+COMPOSITION AND LIGHTING:
+Make PP and the main action easy to see.
+Use a clear composition with readable foreground, middle
+ground, and background where appropriate.
+Use lighting and colors that fit the requested environment.
+Keep important objects visible and avoid hiding PP behind
+the vehicle, props, shadows, or background.
+
+FINAL REQUIREMENTS:
+Follow the user's requested scene and action accurately.
+Do not omit major requested elements.
+Do not add text, captions, or speech bubbles unless requested.
+Do not let the reference image's original background or pose
+override the user's requested scene.
+Produce one coherent, visually appealing image.
 """
+
 
 
 def load_pp_reference():
@@ -280,24 +276,41 @@ def generate_image(prompt):
     reference_image = load_pp_reference()
     final_prompt = build_pp_prompt(prompt)
 
+
     try:
-        print("Sending PP reference + prompt to Hugging Face...")
-        print("Using image-to-image generation...")
+        image_buffer = BytesIO()
 
-        image = client.image_to_image(
-            reference_image,
-            prompt=final_prompt,
-            model=MODEL
-        )
+        # Normalize the output before encoding it.
+        image = image.convert("RGB")
 
-        print("Hugging Face generation succeeded.")
+        # Detect a completely black or nearly black result.
+        stats = ImageStat.Stat(image)
+        mean_brightness = sum(stats.mean) / 3
+        channel_variation = sum(stats.stddev) / 3
+
+        if mean_brightness < 3 and channel_variation < 3:
+            raise RuntimeError(
+                "The model returned a nearly black image. "
+                "The result was rejected."
+            )
+
+        image.save(image_buffer, format="PNG")
+        image_bytes = image_buffer.getvalue()
+
+        encoded_image = base64.b64encode(
+            image_bytes
+        ).decode("utf-8")
 
     except Exception as error:
-        print("HUGGING FACE ERROR:", error)
+        print("--------------------------------")
+        print("IMAGE PROCESSING OR VALIDATION ERROR")
+        print(error)
+        print("--------------------------------")
 
         raise RuntimeError(
-            f"Hugging Face generation failed: {error}"
+            f"Could not process generated image: {error}"
         )
+
 
     try:
         # Add the watermark after the AI finishes generating.
