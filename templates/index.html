@@ -1,8 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#09070d">
 
     <title>PP AI Studio</title>
 
@@ -12,31 +14,45 @@
 
 <body>
 
-    
     <nav class="navbar">
-
-        <div class="logo">
+        <a href="#home" class="logo" aria-label="PP AI Studio home">
             PP<span>AI</span>
-        </div>
+        </a>
 
-        <div class="nav-links">
-            <a href="https://stake.com/?c=PP">Use Code: PP</a>
-            <a href="https://t.me/ArmyOfPP">PP_Army</a>
-            <a href="https://x.com/pp_privatejet_2">Supreme Leader</a>
-            <a href="https://x.com/B1LLY_Blitz2">Fuhrer</a>
-            <a href="https://ppprivatejet.com">PP's Official Website</a>
-        </div>
+        <button class="menu-toggle"
+                id="menuToggle"
+                type="button"
+                aria-label="Open navigation menu"
+                aria-expanded="false"
+                aria-controls="navLinks">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
 
+        <div class="nav-links" id="navLinks">
+            <a href="#generator" class="nav-link">Create</a>
+            <a href="#community" class="nav-link">Community</a>
+            <a href="https://stake.com/?c=PP"
+               target="_blank" rel="noopener noreferrer"
+               class="nav-link">Use Code: PP ↗</a>
+            <a href="https://t.me/ArmyOfPP"
+               target="_blank" rel="noopener noreferrer"
+               class="nav-link">PP Army ↗</a>
+            <a href="https://ppprivatejet.com"
+               target="_blank" rel="noopener noreferrer"
+               class="nav-link">Official Website ↗</a>
+        </div>
     </nav>
 
 
-    
     <main id="home">
 
         <section class="hero">
 
             <div class="hero-badge">
-                ✦ COMMUNITY AI IMAGE GENERATOR
+                <span class="badge-sparkle">✦</span>
+                COMMUNITY AI IMAGE GENERATOR
             </div>
 
             <h1>
@@ -49,10 +65,13 @@
                 Describe your idea and let the AI bring it to life.
             </p>
 
+            <a href="#generator" class="hero-cta">
+                Start Creating <span>↓</span>
+            </a>
+
         </section>
 
 
-        
         <section class="generator-section" id="generator">
 
             <div class="generator-box">
@@ -60,8 +79,11 @@
                 <div class="generator-header">
 
                     <div>
-                        <p class="small-label">CREATE</p>
+                        <p class="small-label">CREATE SOMETHING UNIQUE</p>
                         <h2>What should PP do?</h2>
+                        <p class="generator-subtitle">
+                            Your imagination. Your prompt. Your PP.
+                        </p>
                     </div>
 
                     <div class="status">
@@ -72,24 +94,20 @@
                 </div>
 
 
-                <label for="prompt">
-                    YOUR PROMPT
-                </label>
+                <label for="prompt">YOUR PROMPT</label>
 
                 <textarea
                     id="prompt"
                     maxlength="500"
-                    placeholder="Example: PP standing beside a private jet at sunset, cinematic lighting..."
+                    placeholder="Describe your idea for PP..."
                 ></textarea>
 
 
                 <div class="prompt-footer">
 
-                    <span id="characterCount">
-                        0 / 500
-                    </span>
+                    <span id="characterCount">0 / 500</span>
 
-                    <button id="generateButton">
+                    <button id="generateButton" type="button">
                         <span>✦</span>
                         Generate Image
                     </button>
@@ -99,11 +117,10 @@
             </div>
 
 
-            
             <div class="result-box">
 
                 <div class="result-header">
-                    <span>Your creation</span>
+                    <span class="result-title">Your creation</span>
                     <span id="resultStatus">Waiting for prompt</span>
                 </div>
 
@@ -111,19 +128,19 @@
 
                     <div class="placeholder-content">
 
-                        <div class="placeholder-icon">
-                            ✦
-                        </div>
+                        <div class="placeholder-icon">✦</div>
 
                         <h3>Your creation will appear here</h3>
 
                         <p>
-                            Enter a prompt above and let PP AI create something.
+                            Enter a prompt above and let PP AI
+                            create something.
                         </p>
 
                     </div>
 
                 </div>
+
                 <div class="download-container">
                     <a
                         id="downloadBtn"
@@ -133,20 +150,111 @@
                     >
                         ⬇ Download Image
                     </a>
+                </div>
 
             </div>
 
         </section>
 
 
-       
+        <section class="community-section" id="community">
+
+            <div class="section-heading">
+                <p class="small-label">THE PEOPLE BEHIND THE PROJECT</p>
+
+                <h2>Meet the <span>community.</span></h2>
+
+                <p>
+                    Follow the creator and PP on X.
+                    Click a profile card to visit the account.
+                </p>
+            </div>
+
+
+            <div class="social-grid">
+
+                <a
+                    class="social-card creator-card"
+                    href="https://x.com/B1LLY_Blitz2"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Visit the PP AI Studio creator on X"
+                >
+
+                    <div class="social-card-top">
+                        <div class="social-avatar creator-avatar">
+                            <span>B</span>
+                        </div>
+
+                        <span class="x-logo" aria-hidden="true">𝕏</span>
+                    </div>
+
+                    <div class="social-info">
+                        <span class="profile-label">PROJECT CREATOR</span>
+                        <h3>PP AI Studio Creator</h3>
+                        <p class="social-handle">@B1LLY_Blitz2</p>
+                        <p class="social-description">
+                            Building PP AI Studio and exploring
+                            creative technology.
+                        </p>
+                    </div>
+
+                    <div class="social-card-action">
+                        <span>Visit my profile</span>
+                        <span class="arrow">↗</span>
+                    </div>
+
+                </a>
+
+
+                <a
+                    class="social-card pp-card"
+                    href="https://x.com/pp_privatejet_2"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Visit PP's X account"
+                >
+
+                    <div class="social-card-top">
+                        <div class="social-avatar pp-avatar">
+                            <span>PP</span>
+                        </div>
+
+                        <span class="x-logo" aria-hidden="true">𝕏</span>
+                    </div>
+
+                    <div class="social-info">
+                        <span class="profile-label">THE INSPIRATION</span>
+                        <h3>PP</h3>
+                        <p class="social-handle">@pp_privatejet_2</p>
+                        <p class="social-description">
+                            Visit PP's X profile and follow the
+                            original account.
+                        </p>
+                    </div>
+
+                    <div class="social-card-action">
+                        <span>Visit PP on X</span>
+                        <span class="arrow">↗</span>
+                    </div>
+
+                </a>
+
+            </div>
+
+            <p class="community-note">
+                Independent, community-made project.
+                Not officially affiliated with PP.
+            </p>
+
+        </section>
+
+
         <section class="about" id="about">
 
             <p class="small-label">ABOUT THE PROJECT</p>
 
-            <h2>
-                Built by the community.
-            </h2>
+            <h2>Built by the community.</h2>
 
             <p>
                 PP AI Studio is an unofficial community-made project
@@ -156,10 +264,11 @@
 
             <div class="about-card">
 
-                <span>❄</span>
+                <span class="about-icon">❄</span>
 
                 <div>
                     <strong>Made with curiosity.</strong>
+
                     <p>
                         No promises. No official affiliation.
                         Just a small project made by a developer
@@ -174,17 +283,50 @@
     </main>
 
 
-    
     <footer>
-        <div class="logo">
+
+        <a href="#home" class="logo">
             PP<span>AI</span>
-        </div>
+        </a>
 
         <p>
             PP AI Studio · Unofficial community-made project
         </p>
+
+        <a href="#community" class="footer-link">
+            Find us on X ↗
+        </a>
+
     </footer>
 
+
+    <script>
+        const menuToggle = document.getElementById("menuToggle");
+        const navLinks = document.getElementById("navLinks");
+
+        menuToggle.addEventListener("click", function () {
+            const isOpen = navLinks.classList.toggle("nav-open");
+
+            menuToggle.classList.toggle("menu-open", isOpen);
+            menuToggle.setAttribute("aria-expanded", isOpen);
+            menuToggle.setAttribute(
+                "aria-label",
+                isOpen ? "Close navigation menu" : "Open navigation menu"
+            );
+        });
+
+        navLinks.querySelectorAll("a").forEach(function (link) {
+            link.addEventListener("click", function () {
+                navLinks.classList.remove("nav-open");
+                menuToggle.classList.remove("menu-open");
+                menuToggle.setAttribute("aria-expanded", "false");
+                menuToggle.setAttribute(
+                    "aria-label",
+                    "Open navigation menu"
+                );
+            });
+        });
+    </script>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 
