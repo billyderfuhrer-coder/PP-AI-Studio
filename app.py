@@ -2,8 +2,8 @@
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 from huggingface_hub import InferenceClient
-from PIL import Image, ImageStat
-from PIL import Image, ImageDraw, ImageFont
+
+from PIL import Image, ImageDraw, ImageFont, ImageStat
 import os
 import re
 import base64
@@ -255,6 +255,7 @@ def image_to_data_url(image):
     return "data:image/png;base64," + encoded_image
 
 
+
 def generate_image(prompt):
     print("--------------------------------")
     print("Starting PP image generation...")
@@ -264,29 +265,49 @@ def generate_image(prompt):
     print("--------------------------------")
 
     if not HF_TOKEN:
-        raise RuntimeError(
-            "Hugging Face API token was not found."
-        )
+        raise RuntimeError("Hugging Face API token was not found.")
 
     if client is None:
-        raise RuntimeError(
-            "Hugging Face client was not initialized."
-        )
+        raise RuntimeError("Hugging Face client was not initialized.")
 
     reference_image = load_pp_reference()
     final_prompt = build_pp_prompt(prompt)
 
-
+    # STEP 1: Actually ask Hugging Face to generate the image.
     try:
-        image_buffer = BytesIO()
+        print("Sending PP reference + prompt to Hugging Face...")
 
-        # Normalize the output before encoding it.
+        image = client.image_to_image(
+            reference_image,
+            prompt=final_prompt,
+            model=MODEL
+        )
+
+        print("Hugging Face returned an image.")
+
+    except Exception as error:
+        print("--------------------------------")
+        print("HUGGING FACE GENERATION ERROR")
+        print(repr(error))
+        print("--------------------------------")
+        raise RuntimeError(f"Hugging Face generation failed: {error}")
+
+    # STEP 2: Validate the image returned by the model.
+    try:
+        if not isinstance(image, Image.Image):
+            raise RuntimeError(
+                f"Unexpected image result type: {type(image).__name__}"
+            )
+
         image = image.convert("RGB")
 
-        # Detect a completely black or nearly black result.
         stats = ImageStat.Stat(image)
         mean_brightness = sum(stats.mean) / 3
         channel_variation = sum(stats.stddev) / 3
+
+        print("Generated image size:", image.size)
+        print("Mean brightness:", mean_brightness)
+        print("Channel variation:", channel_variation)
 
         if mean_brightness < 3 and channel_variation < 3:
             raise RuntimeError(
@@ -294,42 +315,27 @@ def generate_image(prompt):
                 "The result was rejected."
             )
 
-        image.save(image_buffer, format="PNG")
-        image_bytes = image_buffer.getvalue()
-
-        encoded_image = base64.b64encode(
-            image_bytes
-        ).decode("utf-8")
-
     except Exception as error:
         print("--------------------------------")
-        print("IMAGE PROCESSING OR VALIDATION ERROR")
-        print(error)
+        print("IMAGE VALIDATION ERROR")
+        print(repr(error))
         print("--------------------------------")
+        raise RuntimeError(f"Image validation failed: {error}")
 
-        raise RuntimeError(
-            f"Could not process generated image: {error}"
-        )
-
-
+    # STEP 3: Add watermark and prepare the website response.
     try:
-        # Add the watermark after the AI finishes generating.
-        # This does not depend on the model drawing text correctly.
         image = add_watermark(image)
-
-        # Convert the watermarked image to the response format.
         image_url = image_to_data_url(image)
 
         print("PP image processed successfully.")
-
         return image_url
 
     except Exception as error:
-        print("IMAGE PROCESSING ERROR:", error)
-
-        raise RuntimeError(
-            f"Could not process generated image: {error}"
-        )
+        print("--------------------------------")
+        print("FINAL IMAGE PROCESSING ERROR")
+        print(repr(error))
+        print("--------------------------------")
+        raise RuntimeError(f"Final image processing failed: {error}")
 
 
 @app.route("/generate", methods=["POST"])
