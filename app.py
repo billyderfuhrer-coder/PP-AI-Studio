@@ -6,6 +6,7 @@ from huggingface_hub import InferenceClient
 from PIL import Image, ImageDraw, ImageFont, ImageStat
 import os
 import re
+import time
 import base64
 from pathlib import Path
 from io import BytesIO
@@ -23,6 +24,9 @@ REFERENCE_FOLDER = Path("references")
 REFERENCE_IMAGE = REFERENCE_FOLDER / "pp1.jpg"
 
 WATERMARK_TEXT = "PP-AI-Studio"
+
+GENERATION_COOLDOWN_SECONDS = 25
+last_generation_times = {}
 
 app = Flask(__name__)
 
@@ -171,7 +175,6 @@ def add_watermark(image):
 
     width, height = image.size
 
-    # Scale the watermark to the output image size.
     font_size = max(12, min(30, width // 38))
     font = load_watermark_font(font_size)
 
@@ -179,7 +182,6 @@ def add_watermark(image):
     margin_x = max(12, width // 40)
     margin_y = max(12, height // 40)
 
-    # Measure the actual text dimensions.
     temporary_draw = ImageDraw.Draw(image)
     left, top, right, bottom = temporary_draw.textbbox(
         (0, 0),
@@ -197,16 +199,12 @@ def add_watermark(image):
     x = margin_x
     y = height - margin_y - box_height
 
-    # Keep the watermark inside even unusually small images.
     x = max(0, min(x, width - box_width))
     y = max(0, min(y, height - box_height))
 
-    # Draw on a separate transparent layer.
     overlay = Image.new("RGBA", image.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
 
-    # Subtle dark backing keeps the watermark readable on
-    # both light and dark backgrounds.
     draw.rounded_rectangle(
         (
             x,
@@ -242,7 +240,7 @@ def add_watermark(image):
 
 
 def image_to_data_url(image):
-    """Convert a Pillow image to a PNG data URL."""
+    
 
     image_buffer = BytesIO()
 
@@ -254,7 +252,16 @@ def image_to_data_url(image):
 
     return "data:image/png;base64," + encoded_image
 
+def get_visitor_key():
+    return request.remote_addr or "unknown"
 
+
+def get_last_generation_time(visitor_key):
+    return last_generation_times.get(visitor_key)
+
+
+def record_last_generation_time(visitor_key, timestamp):
+    last_generation_times[visitor_key] = timestamp
 
 def generate_image(prompt):
     print("--------------------------------")
@@ -273,7 +280,6 @@ def generate_image(prompt):
     reference_image = load_pp_reference()
     final_prompt = build_pp_prompt(prompt)
 
-    # STEP 1: Actually ask Hugging Face to generate the image.
     try:
         print("Sending PP reference + prompt to Hugging Face...")
 
@@ -292,7 +298,6 @@ def generate_image(prompt):
         print("--------------------------------")
         raise RuntimeError(f"Hugging Face generation failed: {error}")
 
-    # STEP 2: Validate the image returned by the model.
     try:
         if not isinstance(image, Image.Image):
             raise RuntimeError(
@@ -322,7 +327,6 @@ def generate_image(prompt):
         print("--------------------------------")
         raise RuntimeError(f"Image validation failed: {error}")
 
-    # STEP 3: Add watermark and prepare the website response.
     try:
         image = add_watermark(image)
         image_url = image_to_data_url(image)
@@ -366,7 +370,33 @@ def generate():
                 "error": "Please include PP in your prompt."
             }), 400
 
+        visitor_key = get_visitor_key()
+        now = time.time()
+
+        last_generation = get_last_generation_time(visitor_key)
+
+        if last_generation is not None:
+            elapsed = now - last_generation
+            remaining_wait = max(
+                0,
+                int(GENERATION_COOLDOWN_SECONDS - elapsed + 0.99)
+            )
+
+            if remaining_wait > 0:
+                return jsonify({
+                    "error": (
+                        f"Please wait {remaining_wait} seconds "
+                        "before generating another image."
+                    ),
+                    "error_code": "GENERATION_COOLDOWN",
+                    "wait_seconds": remaining_wait
+                }), 429
+
+        
         image = generate_image(prompt)
+
+        
+        record_last_generation_time(visitor_key, time.time())
 
         return jsonify({
             "image": image
